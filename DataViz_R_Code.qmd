@@ -1,0 +1,273 @@
+---
+title: "DataViz_R_Code"
+format: html
+editor: visual
+---
+
+## Top Crimes Bar Plot
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+
+setwd("C:\\Users\\priya\\OneDrive\\Documents\\DACSS_690V\\CrimeData_FinalSubmission")
+
+rm(list = ls())
+
+df = read_excel("Crime_Data_from_2020_to_Present.xlsx") 
+
+head(df)
+colnames(df)
+
+x <- table(df$crime_description)
+cdf <- sort(x, decreasing = TRUE)
+cdf <- head(cdf,7)
+cdf <- as.data.frame(cdf)
+cdf
+
+
+cdf <- cdf %>% 
+  rename('Crime' = 'Var1','Count' = 'Freq')
+
+
+cdf <- cdf %>% 
+  mutate(Crime_Type = case_when(
+    Crime == 'VEHICLE - STOLEN' ~ 'Stolen Vehicle',
+    Crime == 'BATTERY - SIMPLE ASSAULT' ~ 'Assault',
+    Crime == 'THEFT OF IDENTITY' ~ 'Identity Theft',
+    Crime == 'BURGLARY FROM VEHICLE' ~ 'Theft From Vehicle',
+    Crime == 'BURGLARY' ~ 'Burglary',
+    Crime == 'VANDALISM - FELONY ($400 & OVER, ALL CHURCH VANDALISMS)' ~ 'Vandalism',
+    Crime == 'ASSAULT WITH DEADLY WEAPON, AGGRAVATED ASSAULT' ~ 'Deadly Assault'
+  ))
+
+cdf <- cdf %>% 
+  select(Crime_Type,Count)
+cdf$Crime_Type <- toupper(cdf$Crime_Type)
+cdf
+
+cdf$Crime_Type <- as.factor(cdf$Crime_Type)
+
+str(cdf)
+
+# Calculate the percentage of count for each crime type
+cdf <- cdf %>% 
+  mutate(Percentage = round(Count/sum(Count)*100, 2))
+
+# Reorder the bars based on count ascending
+cdf <- cdf %>%
+  mutate(Crime_Type = reorder(Crime_Type, Count))
+
+Plot <- ggplot(cdf, aes(Crime_Type, Count, fill = Crime_Type)) +
+  geom_bar(stat = 'identity', fill = "lightblue") +
+  geom_text(aes(label = paste0(round(Percentage), "%")), 
+            position = position_stack(vjust = 1.06), 
+            color = "black", size = 3) +  # Add text labels for percentages
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_y_continuous(breaks = c(0, 20000, 40000, 60000, 80000, 100000),
+                     limits = c(0, 100000),
+                     labels = function(x) format(x, scientific = FALSE)) +
+  labs(title = 'Top 7 Crimes in LA, US',
+       x = "Type of Crime",
+       y = "Incident Count",
+       caption = "Source: US Crime Department",
+       subtitle = "Crimes listed in Los Angeles from 2010 till 2016")+
+  guides(fill = FALSE)
+
+Plot
+
+saveRDS(Plot, file = "Plot1.rds")
+```
+
+## Demographic Histogram
+
+```{r}
+data_crime <- df
+
+data_crime$date_occurred <- as.Date(data_crime$date_occurred)
+
+# Filter between two dates
+start_date <- as.Date("2023-01-01")
+end_date <- as.Date("2023-11-30")
+
+filtered_data2 <- data_crime[data_crime$date_occurred >= start_date & data_crime$date_occurred <= end_date, ]
+
+filtered_data2 <- filtered_data2[filtered_data2$victim_age > 0,]
+
+victimplot <- ggplot(filtered_data2, aes(x = victim_age)) +
+  geom_histogram(binwidth = 5, fill = "lightblue", color = "black") +
+  labs(title = "Distribution of victim's age ", x = "Age of victims", y = "Frequency", caption = "Source: US Crime Department", subtitle = "Crimes listed in Los Angeles, USA in 2023") +  scale_x_continuous(breaks = c(10,20,30,40,50,60,70,80,90), limits = c(10,90, by = 10))+
+  theme_minimal()
+
+victimplot
+
+saveRDS(victimplot, file = "Plot2.rds")
+```
+
+## Crime-Prone Areas Stacked Bar Plot
+
+```{r}
+
+names(df)
+
+table(df$area_name, df$crime_description)
+
+del_3.df <- df %>% 
+  select(2,4)
+
+head(del_3.df)
+
+unique(del_3.df$area_name)
+unique(del_3.df$crime_description)
+
+Top_Crime <- table(del_3.df$crime_description)
+Top_Crime <- as.data.frame(Top_Crime)
+
+Top_Crime <- Top_Crime %>% 
+  arrange(desc(Top_Crime$Freq))
+
+Top_Crime <- head(Top_Crime,7)
+
+unique(Top_Crime$Var1)
+
+del_3.df <- del_3.df %>% 
+  filter(crime_description == c('VEHICLE - STOLEN','BATTERY - SIMPLE ASSAULT','THEFT OF IDENTITY','BURGLARY FROM VEHICLE','BURGLARY'))
+
+Top_Area <- table(del_3.df$area_name)
+Top_Area <- as.data.frame(Top_Area)
+Top_Area <- Top_Area %>% 
+  arrange(desc(Top_Area$Freq))
+
+head(Top_Area,5)
+
+del_3.df <- del_3.df %>% 
+  filter(area_name %in% c('Central','77th Street','Newton','Pacific','Southeast'))
+
+head(del_3.df)
+table(del_3.df)
+
+del_3.tab <- as.data.frame(table(del_3.df))
+
+del_3.tab <- del_3.tab %>% 
+  rename("Area_Name" = "area_name",
+         "Crime_Type" = "crime_description")
+del_3.tab <- del_3.tab %>% 
+  rename("Count" = "Freq")
+
+library(magrittr) # for %>%
+
+del_3_mgCol = prop.table(table(del_3.df),
+                            margin = 2) %>% 
+    round(.,3)
+
+del_3.tab$pctCol <- as.data.frame(del_3_mgCol)[,3]
+head(del_3.tab)
+
+del_3.tab <- del_3.tab %>% 
+  mutate(Crime = case_when(
+    Crime_Type == "BATTERY - SIMPLE ASSAULT" ~ "SIMPLE ASSAULT",
+    Crime_Type == "THEFT OF IDENTITY" ~ "IDENTITY THEFT",
+    Crime_Type == "BURGLARY" ~ "BURGLARY",
+    Crime_Type == "VEHICLE - STOLEN" ~ "STOLEN VEHICLE",
+    Crime_Type == "BURGLARY FROM VEHICLE" ~ "BURGLARY FROM VEHICLE"
+  ))
+
+del_3.tab <- del_3.tab %>% 
+  select(-2)
+
+
+del_2_V2 <- ggplot(del_3.tab, aes(x = Crime, y = pctCol, fill = reorder(Area_Name,pctCol)))+
+  geom_bar(stat = "identity",
+           position = "stack")+
+  geom_text(size = 3.25,
+            position = position_stack(vjust = 0.5),
+            color = "grey5",
+            aes(label=formattable::percent(pctCol)))+
+  theme_minimal()+
+  theme(axis.text.y =element_blank())+
+  labs(title = "Crime Shares for Top 5 Crime-Prone Areas", subtitle = "Reported in Los Angeles from 2010 to 2016",
+       x = "Crime Type", y = "", fill = "Areas", caption = "Source: US Crime Department")+
+  theme(plot.caption = element_text(hjust = 0))+
+  theme(axis.text.x = element_text(angle = 45,hjust = 1))+
+  scale_fill_manual(values = c("#fd7f6f",  "#ffee65", "#5ad45a","#0080ff", "#a4a2a8"))
+
+del_2_V2  
+
+saveRDS(del_2_V2, file = "Plot3.rds")
+```
+
+## Temporal Crime Chart
+
+```{r}
+
+data_crime$date_occurred <- as.Date(data_crime$date_occurred)
+
+# Filter between two dates
+start_date <- as.Date("2023-01-01")
+end_date <- as.Date("2023-11-30")
+
+filtered_data <- data_crime[data_crime$date_occurred >= start_date & data_crime$date_occurred <= end_date, ]
+
+
+filtered_data <- subset(filtered_data, crime_description %in% c('VEHICLE - STOLEN', 'BATTERY - SIMPLE ASSAULT','THEFT OF IDENTITY', 'BURGLARY FROM VEHICLE', 'BURGLARY'))
+
+filtered_data <- filtered_data %>% 
+  mutate(crime_description = case_when(
+    crime_description == 'VEHICLE - STOLEN' ~ 'Stolen Vehicle',
+    crime_description == 'BATTERY - SIMPLE ASSAULT' ~ 'Assault',
+    crime_description == 'THEFT OF IDENTITY' ~ 'Identity Theft',
+    crime_description == 'BURGLARY FROM VEHICLE' ~ 'Burglary From Vehicle',       
+    crime_description == 'BURGLARY' ~ 'Burglary'))
+
+# Convert 'date_occurred' to month
+filtered_data$month <- format(filtered_data$date_occurred, "%m")
+
+
+summary_table <- filtered_data %>%
+  group_by(month, crime_description) %>%
+  summarise(count = n())
+
+dateplot <- ggplot(summary_table, aes(x = as.numeric(month), y = count, color = crime_description)) +
+  geom_line(size = 1, show.legend = TRUE) +
+  geom_point(size = 2) +
+  scale_x_continuous(breaks = 1:12, labels = month.abb) +
+  labs(x = "Month", y = "Total Crimes", title = "Crimes in City of Los Angeles, USA", caption = "Source: US Crime Department", subtitle = "Data of crimes monthly by type of crime (2023)", color = "Top 5 crimes") + theme_minimal() +  theme(legend.position = "top")
+
+saveRDS(dateplot, file = "Plot3.2.rds")
+
+dateplot
+```
+
+## Choropleth Map
+
+```{r}
+library(sf) 
+
+LAPD_divisions_geodata <- sf::read_sf("LAPD_Divisions_CrimesPop.gpkg")
+
+LAPD_divisions_geodata <- LAPD_divisions_geodata %>% rename('crimes_Count' = 'LAPD_Divis','LAPD_Divisions' = 'LAPD_Div_1', 'Population' = 'Lapd_div_6')
+
+head(LAPD_divisions_geodata)
+
+LAPD_divisions_geodata$crimes_density=LAPD_divisions_geodata$crimes_Count/LAPD_divisions_geodata$Population
+
+heat_map <- ggplot(data = LAPD_divisions_geodata) + 
+  geom_sf(aes(fill = crimes_density)) + 
+  scale_fill_viridis_c(direction = -1, option = 'rocket') +
+  labs(title = "Crime Choropleth Map in Los Angeles, USA",  # Adding a title
+       fill = "Crimes density(population)", 
+       caption = "Source: US Crime Department, Los Angeles
+GeoHub, Los Angeles Police Department", 
+       subtitle = "Data of crimes (stolen vehicles) in 2023") +  theme_minimal() +
+  theme(legend.position = "right", 
+        axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+heat_map
+
+saveRDS(heat_map, file = "Plot4.rds")
+```

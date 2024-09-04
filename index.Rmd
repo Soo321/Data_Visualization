@@ -1,0 +1,54 @@
+---
+title: "LA Crime Watch: Exploring patterns and trends"
+bibliography: testVisual.bib
+output: 
+  flexdashboard::flex_dashboard
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard) # always
+```
+
+## Introduction {.sidebar}
+
+
+Welcome to our interactive dashboard, offering a comprehensive overview of crime patterns in Los Angeles, USA. Our data, sourced from the US Crime Department, spans from 2010 to 2016, providing valuable insights into the city's criminal landscape. Delve into various crime types, including theft, assault, and vandalism, and discover intriguing trends, such as the prevalence of stolen vehicles. Interestingly, individuals aged 30 to 40 years old are frequently involved in reported incidents. Stay informed and vigilant as you explore the dynamic visualizations presented here.
+
+You can find the code for this dashboard here:
+https://github.com/Bhavani458/CrimeData_FinalSubmission
+
+## Column {.tabset .tabset-fade}
+
+
+### Top Crimes
+
+```{r}
+readRDS("Plot1.rds")
+```
+
+
+### Demographic Distribution
+
+```{r}
+readRDS("Plot2.rds")
+```
+
+### Crime-Prone Areas
+
+```{r}
+readRDS("Plot3.rds")
+```
+
+### Temporal Crime Chart
+
+```{r}
+readRDS("Plot3.2.rds")
+```
+
+
+### Choropleth Crime Map
+
+```{r}
+readRDS("Plot4.rds")
+```
+
